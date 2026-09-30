@@ -10,14 +10,26 @@ const C = {
   red: 0xff3355,
   violet: 0x7a3cff,
   white: 0xffffff,
-  planetFill: 0x160532,
+  planetFill: 0x0c0640,
+  yellow: 0xffc23c,
 };
 const FONT = 'Trebuchet MS, Verdana, Arial, sans-serif';
 const hex = (n) => '#' + n.toString(16).padStart(6, '0');
 const PLANET_COLOR = { normal: C.magenta, fast: C.cyan, crumble: C.orange };
+// Rim gradients (light side -> shadow side), matching the logo's cyan-to-magenta planet.
+const RIM = { normal: [C.cyan, C.magenta], fast: [0xb8f7ff, 0x4b7bff], crumble: [C.yellow, 0xff3c8e] };
+const RIM_SEGMENTS = 28;
+const lerpColor = (a, b, t) => {
+  const c = Phaser.Display.Color.Interpolate.ColorWithColor(Phaser.Display.Color.IntegerToColor(a), Phaser.Display.Color.IntegerToColor(b), 100, t * 100);
+  return Phaser.Display.Color.GetColor(c.r, c.g, c.b);
+};
 
 export default class GameScene extends Phaser.Scene {
   constructor() { super('Game'); }
+
+  preload() {
+    this.load.image('logo', 'logo.png');
+  }
 
   create() {
     const saved = platform.data;
@@ -41,6 +53,13 @@ export default class GameScene extends Phaser.Scene {
     this.bestText = this.add.text(W - 24, 28, '', { fontFamily: FONT, fontSize: '26px', color: '#c9b8ff' })
       .setOrigin(1, 0).setDepth(10);
     this.overlay = this.add.container(0, 0).setDepth(20);
+    this.rimColors = {};
+    for (const [type, [c1, c2]] of Object.entries(RIM)) {
+      this.rimColors[type] = Array.from({ length: RIM_SEGMENTS }, (_, i) => {
+        const a = ((i + 0.5) / RIM_SEGMENTS) * Math.PI * 2 - Math.PI;
+        return lerpColor(c1, c2, (1 - Math.cos(a + Math.PI * 0.75)) / 2);
+      });
+    }
 
     this.input.on('pointerdown', () => this.onTap());
     this.input.keyboard.on('keydown-SPACE', () => this.onTap());
@@ -61,9 +80,9 @@ export default class GameScene extends Phaser.Scene {
     const tex = this.textures.createCanvas('bg', W, H);
     const ctx = tex.getContext();
     const grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, '#07021a');
-    grad.addColorStop(0.55, '#1a0638');
-    grad.addColorStop(1, '#3a0a52');
+    grad.addColorStop(0, '#060326');
+    grad.addColorStop(0.55, '#150a48');
+    grad.addColorStop(1, '#360a5a');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
     tex.refresh();
@@ -88,13 +107,15 @@ export default class GameScene extends Phaser.Scene {
   }
 
   showReady() {
-    const title = this.add.text(W / 2, 300, 'NOVA SKIM', { fontFamily: FONT, fontSize: '92px', fontStyle: 'italic bold', color: '#ffffff' })
-      .setOrigin(0.5).setShadow(0, 0, hex(C.magenta), 28, true, true).setPadding(36, 28);
-    const sub = this.add.text(W / 2, 390, 'tap to release  •  land on planets  •  skim the mines', { fontFamily: FONT, fontSize: '26px', color: '#c9b8ff' }).setOrigin(0.5);
+    const logo = this.add.image(W / 2, 300, 'logo').setDisplaySize(400, 400);
+    this.tweens.add({ targets: logo, y: 314, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const title = this.add.text(W / 2, 560, 'NOVA SKIM', { fontFamily: FONT, fontSize: '84px', fontStyle: 'italic bold', color: '#8ff4ff' })
+      .setOrigin(0.5).setShadow(0, 0, hex(C.magenta), 26, true, true).setPadding(36, 28);
+    const sub = this.add.text(W / 2, 650, 'tap to release  •  land on planets  •  skim the mines', { fontFamily: FONT, fontSize: '26px', color: '#c9b8ff' }).setOrigin(0.5);
     const start = this.add.text(W / 2, 1010, 'TAP TO START', { fontFamily: FONT, fontSize: '46px', fontStyle: 'bold', color: hex(C.cyan) })
       .setOrigin(0.5).setShadow(0, 0, hex(C.cyan), 16, true, true).setPadding(36, 28);
     this.tweens.add({ targets: start, alpha: 0.35, duration: 700, yoyo: true, repeat: -1 });
-    this.overlay.add([title, sub, start]);
+    this.overlay.add([logo, title, sub, start]);
   }
 
   startRun() {
@@ -232,6 +253,20 @@ export default class GameScene extends Phaser.Scene {
     g.lineStyle(width, color, alpha); g.strokeCircle(x, y, r);
   }
 
+  rim(x, y, r, type, alpha) {
+    const g = this.g;
+    const cols = this.rimColors[type];
+    const step = (Math.PI * 2) / RIM_SEGMENTS;
+    for (let i = 0; i < RIM_SEGMENTS; i++) {
+      const a0 = -Math.PI + i * step - 0.02;
+      const a1 = a0 + step + 0.04;
+      g.lineStyle(9, cols[i], 0.16 * alpha);
+      g.beginPath(); g.arc(x, y, r, a0, a1); g.strokePath();
+      g.lineStyle(3, cols[i], alpha);
+      g.beginPath(); g.arc(x, y, r, a0, a1); g.strokePath();
+    }
+  }
+
   draw() {
     const g = this.g;
     const w = this.world;
@@ -276,7 +311,7 @@ export default class GameScene extends Phaser.Scene {
       const a = this.trail[i - 1];
       const b = this.trail[i];
       const f = i / this.trail.length;
-      g.lineStyle(2 + f * 8, C.cyan, f * 0.55);
+      g.lineStyle(2 + f * 8, lerpColor(0xa03cff, C.yellow, f), 0.15 + f * 0.6);
       g.lineBetween(a.x, a.y - cy, b.x, b.y - cy);
     }
 
@@ -322,7 +357,7 @@ export default class GameScene extends Phaser.Scene {
     g.fillCircle(p.x, y, p.r);
     g.fillStyle(color, dead ? 0.05 : 0.14);
     g.fillCircle(p.x - p.r * 0.25, y - p.r * 0.25, p.r * 0.7);
-    this.glowCircle(p.x, y, p.r, color, 3, dead ? 0.25 : 1);
+    this.rim(p.x, y, p.r, p.type, dead ? 0.25 : 1);
     if (p.type === 'fast' && !dead) {
       g.lineStyle(2, color, 0.7);
       g.beginPath(); g.arc(p.x, y, p.r * 0.6, this.world.time * 4, this.world.time * 4 + 1.6); g.strokePath();
