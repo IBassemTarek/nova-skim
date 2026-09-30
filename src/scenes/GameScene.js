@@ -141,7 +141,8 @@ export default class GameScene extends Phaser.Scene {
     audio.over();
     const w = this.world;
     const isBest = w.score > this.startBest;
-    if (isBest) { this.best = w.score; platform.save({ best: this.best }); }
+    if (isBest) this.best = w.score;
+    this.saveProgress();
     platform.sendScore(w.score);
     if (!this.reduceMotion) this.cameras.main.shake(300, 0.012);
     this.burst(w.ship.x, w.ship.y, C.red, 40, 420);
@@ -162,8 +163,13 @@ export default class GameScene extends Phaser.Scene {
     this.overlay.add([dim, t1, t2, t3, t4, t5]);
   }
 
+  saveProgress() {
+    platform.save({ best: this.best, tutorialDone: this.tutorialDone });
+  }
+
   setPaused(paused) {
     if (paused) {
+      this.saveProgress();
       audio.suspend();
       this.game.loop.sleep();
     } else {
