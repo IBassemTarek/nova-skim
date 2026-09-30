@@ -77,14 +77,14 @@ def synth_floor(canvas, horizon, sun_r):
     canvas.alpha_composite(fl)
 
 
-def planet(canvas, cx, cy, r, kind='normal', ring_gap=0.5, dim=1.0):
+def planet(canvas, cx, cy, r, kind='normal', ring_gap=0.5, dim=1.0, orbit_k=1.32):
     c1, c2 = RIM[kind]
     n = 72
     ring = layer(canvas.size)
     rd = ImageDraw.Draw(ring)
     rr = r * (1 + ring_gap)
     rd.ellipse([cx - rr, cy - rr, cx + rr, cy + rr], outline=c1 + (int(60 * dim),), width=max(2, SS))
-    orb_r = r * 1.32
+    orb_r = r * orbit_k
     rd.ellipse([cx - orb_r, cy - orb_r, cx + orb_r, cy + orb_r], outline=c1 + (int(55 * dim),), width=max(1, SS // 2 + 1))
     canvas.alpha_composite(ring)
     body = layer(canvas.size)
@@ -106,7 +106,7 @@ def planet(canvas, cx, cy, r, kind='normal', ring_gap=0.5, dim=1.0):
     canvas.alpha_composite(l)
 
 
-def mine(canvas, cx, cy, r):
+def mine(canvas, cx, cy, r, rot=0.3):
     near = layer(canvas.size)
     ImageDraw.Draw(near).ellipse([cx - r * 3.4, cy - r * 3.4, cx + r * 3.4, cy + r * 3.4], outline=RED + (70,), width=max(2, SS))
     canvas.alpha_composite(near)
@@ -114,7 +114,7 @@ def mine(canvas, cx, cy, r):
     l = layer(canvas.size)
     d = ImageDraw.Draw(l)
     for i in range(6):
-        a = math.pi / 3 * i + 0.3
+        a = math.pi / 3 * i + rot
         d.line([(cx + math.cos(a) * r, cy + math.sin(a) * r), (cx + math.cos(a) * r * 1.55, cy + math.sin(a) * r * 1.55)], fill=RED + (255,), width=int(r * 0.22))
     d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(42, 5, 16, 255), outline=RED + (255,), width=int(r * 0.2))
     canvas.alpha_composite(l)
