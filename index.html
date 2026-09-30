@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Nova Skim</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #0b0b1a; overflow: hidden; touch-action: none; overscroll-behavior: none; -webkit-user-select: none; user-select: none; }
+      #game { position: fixed; inset: 0; }
+      canvas { display: block; }
+    </style>
+    <!-- YouTube Playables SDK: must load before any game code -->
+    <script src="https://www.youtube.com/game_api/v1"></script>
+  </head>
+  <body>
+    <div id="game"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
